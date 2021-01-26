@@ -81,7 +81,7 @@ def start():
     if scheduler.running:
         scheduler.resume()
     else:
-        job_id = scheduler.add_job(exec_data, 'cron', hour=0, minute=0, seconds=0, id="data")
+        job_id = scheduler.add_job(exec_data, 'cron', hour=0, minute=0, second=0, id="data")
         jobs.append(job_id)
         
         scheduler.start()
@@ -99,6 +99,8 @@ def action():
     data = json.loads(data)
     answer = data["actions"][0]["value"]
 
+    app.logger.info(answer)
+    
     # if answer == "train":
     
     return {"answer": answer}
