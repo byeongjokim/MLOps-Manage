@@ -24,7 +24,7 @@ TRAIN_DATA_PATH = "/data/mnist/train"
 FAISS_TRAIN_DATA_PATH = "/data/faiss/train"
 pre_num_data = [0, 0]
 
-def send_slack(text):
+def send_interactive_slack(text):
     p = {
             "text": text,
             "attachments": [
@@ -59,6 +59,21 @@ def send_slack(text):
     }
     webhook.send(text=p["text"], response_type="in_channel", attachments=p["attachments"])
 
+def send_notice_slack(text, text2):
+    p = {
+            "text": text,
+            "blocks": [
+                {
+                    "type": "section",
+                    "text": {
+                        "type": "mrkdwn",
+                        "text": text2
+                    }
+                }
+            ]
+    }
+    webhook.send(text=p["text"], blocks=p["blocks"])
+
 def seek_data(train_data_path, faiss_train_data_path):
     train_data = glob.glob(os.path.join(train_data_path, "**/*.png"))
     faiss_train_data = glob.glob(os.path.join(faiss_train_data_path, "**/*.png"))
@@ -74,6 +89,9 @@ def exec_data():
         send_slack("{} new data for embedding and {} new data for faiss is detected".format(str(num_data[0] - pre_num_data[0]), str(num_data[1] - pre_num_data[1])))
         pre_num_data = num_data
 
+def train():
+    app.logger.info("train!!!!!!!!!!!!!!!!!!!!")
+
 @app.route("/start")
 def start():
     global jobs
@@ -82,7 +100,7 @@ def start():
         scheduler.resume()
     else:
         # job_id = scheduler.add_job(exec_data, 'cron', hour=0, minute=0, second=0, id="data")
-        job_id = scheduler.add_job(exec_data, 'interval', seconds=30, id="data")
+        job_id = scheduler.add_job(exec_data, 'interval', seconds=60, id="data")
         jobs.append(job_id)
         
         scheduler.start()
@@ -100,11 +118,36 @@ def action():
     data = json.loads(data)
     answer = data["actions"][0]["value"]
 
+    status = ""
+
     app.logger.info(answer)
     
-    # if answer == "train":
+    if answer == "train":
+        try:
+            train()
+            status = "Start to train!!!"
+        except:
+            status = "Error!!!"
+    else:
+        stauts = "Nothing!!!"
+
+    return {"status": status}
     
-    return {"answer": answer}
+
+@app.route("/send", methods=["POST"])
+def send():
+    text = request.form["text"]
+    text2 = request.form["text2"]
+
+    status = ""
+
+    try:
+        send_notice_slack(text, text2)
+        status = 1
+    except:
+        status = 0
+
+    return {"status": status}
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port='8088', debug=True)
