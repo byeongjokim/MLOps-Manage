@@ -13,6 +13,8 @@ import json
 
 app = Flask(__name__)
 url = "https://hooks.slack.com/services/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"
+kf_url = "http://220.116.228.93:8089"
+
 webhook = WebhookClient(url)
 scheduler = BackgroundScheduler()
 
@@ -40,7 +42,6 @@ def send_interactive_slack(text):
                             "type": "button",
                             "text": "Train!",
                             "value": "train",
-                            "url": "http://www.naver.com",
                             "confirm": {
                                 "title": "Are you sure?",
                                 "text": "Do Train?",
@@ -101,14 +102,6 @@ def exec_data():
     else:
         send_notice_slack(text, "No Need to Train!!!")
 
-def train():
-    app.logger.info("train!!!!!!!!!!!!!!!!!!!!")
-    
-    global NUM_SEEKED_DATA, NUM_TRAINED_DATA
-    
-    NUM_TRAINED_DATA[0] = NUM_SEEKED_DATA[0]
-    NUM_TRAINED_DATA[1] = NUM_SEEKED_DATA[1]
-
 def get_jobs():
     list_jobs = scheduler.get_jobs()
     return [str(job) + " Pending" if job.pending else str(job) + " Running" for job in list_jobs]
@@ -143,15 +136,13 @@ def action():
 
     status = ""
     if answer == "train":
-        try:
-            train()
-            status = "Start to train!!!"
-        except:
-            status = "Error!!!"
-    else:
-        status = "Nothing!!!"
+        global NUM_SEEKED_DATA, NUM_TRAINED_DATA
+        NUM_TRAINED_DATA[0] = NUM_SEEKED_DATA[0]
+        NUM_TRAINED_DATA[1] = NUM_SEEKED_DATA[1]
 
-    return {"status": status}
+        send_notice_slack("Here is Kubeflow URL", "Kubeflow URL: {}".format(kf_url))
+
+    return '', 204
 
 @app.route("/send", methods=["POST"])
 def send():
