@@ -107,7 +107,7 @@ def train():
 
 def get_jobs():
     list_jobs = scheduler.get_jobs()
-    return ["Pending" if job.pending() == "True" else "Running" for job in list_jobs]
+    return ["Pending" if job.pending() else "Running" for job in list_jobs]
 
 @app.route("/start")
 def start():
