@@ -118,8 +118,8 @@ def start():
     if scheduler.running:
         scheduler.resume()
     else:
-        job_id = scheduler.add_job(exec_data, 'cron', hour=0, minute=0, second=0, id="data")
-        # job_id = scheduler.add_job(exec_data, 'interval', seconds=60, id="data")
+        # job_id = scheduler.add_job(exec_data, 'cron', hour=0, minute=0, second=0, id="data")
+        job_id = scheduler.add_job(exec_data, 'interval', seconds=60, id="data")
         scheduler.start()
     
     return {"jobs": get_jobs()}
