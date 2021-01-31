@@ -20,7 +20,9 @@ scheduler = BackgroundScheduler()
 DATA_INTERVAL = 100
 TRAIN_DATA_PATH = "/data/mnist/train"
 FAISS_TRAIN_DATA_PATH = "/data/faiss/train"
-pre_num_data = [0, 0]
+
+NUM_TRAINED_DATA = [0, 0]
+NUM_SEEKED_DATA = [0, 0]
 
 def send_interactive_slack(text):
     p = {
@@ -65,6 +67,13 @@ def send_notice_slack(text, text2):
                     "type": "section",
                     "text": {
                         "type": "mrkdwn",
+                        "text": text
+                    }
+                },
+                {
+                    "type": "section",
+                    "text": {
+                        "type": "mrkdwn",
                         "text": text2
                     }
                 }
@@ -79,18 +88,26 @@ def seek_data(train_data_path, faiss_train_data_path):
     return [len(train_data), len(faiss_train_data)]
 
 def exec_data():
-    global pre_num_data
+    global NUM_SEEKED_DATA, NUM_TRAINED_DATA
 
-    num_data = seek_data(TRAIN_DATA_PATH, FAISS_TRAIN_DATA_PATH)
+    NUM_SEEKED_DATA = seek_data(TRAIN_DATA_PATH, FAISS_TRAIN_DATA_PATH)
 
-    if num_data[0] > pre_num_data[0] + DATA_INTERVAL or num_data[1] > pre_num_data[1] + DATA_INTERVAL:
-        send_interactive_slack("{} new data for embedding and {} new data for faiss is detected".format(str(num_data[0] - pre_num_data[0]), str(num_data[1] - pre_num_data[1])))
-        pre_num_data = num_data
+    if NUM_SEEKED_DATA[0] > NUM_TRAINED_DATA[0] + DATA_INTERVAL or NUM_SEEKED_DATA[1] > NUM_TRAINED_DATA[1] + DATA_INTERVAL:
+        send_interactive_slack("{} new data for embedding and {} new data for faiss is detected".format(str(NUM_SEEKED_DATA[0] - NUM_TRAINED_DATA[0]), str(NUM_SEEKED_DATA[1] - NUM_TRAINED_DATA[1])))
     else:
-        send_notice_slack("{} new data for embedding and {} new data for faiss is detected".format(str(num_data[0] - pre_num_data[0]), str(num_data[1] - pre_num_data[1])), "no need to train")
+        send_notice_slack("{} new data for embedding and {} new data for faiss is detected".format(str(NUM_SEEKED_DATA[0] - NUM_TRAINED_DATA[0]), str(NUM_SEEKED_DATA[1] - NUM_TRAINED_DATA[1])), "No Need to Train!!!")
 
 def train():
     app.logger.info("train!!!!!!!!!!!!!!!!!!!!")
+    
+    global NUM_SEEKED_DATA, NUM_TRAINED_DATA
+    
+    NUM_TRAINED_DATA[0] = NUM_SEEKED_DATA[0]
+    NUM_TRAINED_DATA[1] = NUM_SEEKED_DATA[1]
+
+def get_jobs():
+    list_jobs = scheduler.get_jobs()
+    return ["Pending" if job.pending() == "True" else "Running" for job in list_jobs]
 
 @app.route("/start")
 def start():
@@ -101,23 +118,17 @@ def start():
         job_id = scheduler.add_job(exec_data, 'interval', seconds=60, id="data")
         scheduler.start()
     
-    list_jobs = scheduler.get_jobs()
-
-    return {"jobs": str(list_jobs)}
+    return {"jobs": get_jobs()}
 
 @app.route("/status")
 def status():
-    list_jobs = scheduler.get_jobs()
-
-    return {"jobs": str(list_jobs)}
+    return {"jobs": get_jobs()}
 
 @app.route("/stop")
 def stop():
     scheduler.pause()
 
-    list_jobs = scheduler.get_jobs()
-
-    return {"jobs": str(list_jobs)}
+    return {"jobs": get_jobs()}
 
 @app.route("/actions", methods=["POST"])
 def action():
