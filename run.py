@@ -86,7 +86,7 @@ def exec_data():
     num_data = seek_data(TRAIN_DATA_PATH, FAISS_TRAIN_DATA_PATH)
 
     if num_data[0] > pre_num_data[0] + DATA_INTERVAL or num_data[1] > pre_num_data[1] + DATA_INTERVAL:
-        send_slack("{} new data for embedding and {} new data for faiss is detected".format(str(num_data[0] - pre_num_data[0]), str(num_data[1] - pre_num_data[1])))
+        send_interactive_slack("{} new data for embedding and {} new data for faiss is detected".format(str(num_data[0] - pre_num_data[0]), str(num_data[1] - pre_num_data[1])))
         pre_num_data = num_data
 
 def train():
