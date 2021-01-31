@@ -88,6 +88,9 @@ def exec_data():
     if num_data[0] > pre_num_data[0] + DATA_INTERVAL or num_data[1] > pre_num_data[1] + DATA_INTERVAL:
         send_interactive_slack("{} new data for embedding and {} new data for faiss is detected".format(str(num_data[0] - pre_num_data[0]), str(num_data[1] - pre_num_data[1])))
         pre_num_data = num_data
+    else:
+        send_notice_slack("{} new data for embedding and {} new data for faiss is detected".format(str(num_data[0] - pre_num_data[0]), str(num_data[1] - pre_num_data[1])), "no need to train")
+
 
 def train():
     app.logger.info("train!!!!!!!!!!!!!!!!!!!!")
