@@ -28,33 +28,34 @@ def send_interactive_slack(text):
     p = {
             "text": text,
             "attachments": [
-            {
+                {
                     "text": "Would you like to train models?",
                     "fallback": "abcd",
                     "callback_id": "confirm",
                     "color": "#3AA3E3",
                     "attachment_type": "default",
                     "actions": [
-                    {
+                        {
                             "name": "answer",
                             "type": "button",
                             "text": "Train!",
                             "value": "train",
+                            "url": "http://www.naver.com",
                             "confirm": {
-                                    "title": "Are you sure?",
-                                    "text": "Do Train?",
-                                    "ok_text": "Yes",
-                                    "dismiss_text": "No"
+                                "title": "Are you sure?",
+                                "text": "Do Train?",
+                                "ok_text": "Yes",
+                                "dismiss_text": "No"
                             }
-                    },
-                    {
+                        },
+                        {
                             "name": "answer",
                             "type": "button",
                             "text": "Nope!",
                             "value": "nope"
-                    }
+                        }
                     ]
-            }
+                }
             ]
     }
     webhook.send(text=p["text"], response_type="in_channel", attachments=p["attachments"])
@@ -91,11 +92,14 @@ def exec_data():
     global NUM_SEEKED_DATA, NUM_TRAINED_DATA
 
     NUM_SEEKED_DATA = seek_data(TRAIN_DATA_PATH, FAISS_TRAIN_DATA_PATH)
+    
+    text = "{} new data for embedding and {} new data for faiss is detected".format(str(NUM_SEEKED_DATA[0] - NUM_TRAINED_DATA[0]), str(NUM_SEEKED_DATA[1] - NUM_TRAINED_DATA[1]))
+    app.logger.info(text)
 
     if NUM_SEEKED_DATA[0] > NUM_TRAINED_DATA[0] + DATA_INTERVAL or NUM_SEEKED_DATA[1] > NUM_TRAINED_DATA[1] + DATA_INTERVAL:
-        send_interactive_slack("{} new data for embedding and {} new data for faiss is detected".format(str(NUM_SEEKED_DATA[0] - NUM_TRAINED_DATA[0]), str(NUM_SEEKED_DATA[1] - NUM_TRAINED_DATA[1])))
+        send_interactive_slack(text)    
     else:
-        send_notice_slack("{} new data for embedding and {} new data for faiss is detected".format(str(NUM_SEEKED_DATA[0] - NUM_TRAINED_DATA[0]), str(NUM_SEEKED_DATA[1] - NUM_TRAINED_DATA[1])), "No Need to Train!!!")
+        send_notice_slack(text, "No Need to Train!!!")
 
 def train():
     app.logger.info("train!!!!!!!!!!!!!!!!!!!!")
@@ -114,8 +118,8 @@ def start():
     if scheduler.running:
         scheduler.resume()
     else:
-        # job_id = scheduler.add_job(exec_data, 'cron', hour=0, minute=0, second=0, id="data")
-        job_id = scheduler.add_job(exec_data, 'interval', seconds=60, id="data")
+        job_id = scheduler.add_job(exec_data, 'cron', hour=0, minute=0, second=0, id="data")
+        # job_id = scheduler.add_job(exec_data, 'interval', seconds=60, id="data")
         scheduler.start()
     
     return {"jobs": get_jobs()}
@@ -135,11 +139,9 @@ def action():
     data = request.form["payload"]
     data = json.loads(data)
     answer = data["actions"][0]["value"]
+    app.logger.info(answer)
 
     status = ""
-
-    app.logger.info(answer)
-    
     if answer == "train":
         try:
             train()
@@ -147,10 +149,9 @@ def action():
         except:
             status = "Error!!!"
     else:
-        stauts = "Nothing!!!"
+        status = "Nothing!!!"
 
     return {"status": status}
-    
 
 @app.route("/send", methods=["POST"])
 def send():
