@@ -16,8 +16,6 @@ url = "https://hooks.slack.com/services/T01HBH7033P/B01KNBW00J2/6QYH5C4GaFeX6s7u
 webhook = WebhookClient(url)
 scheduler = BackgroundScheduler()
 
-jobs = []
-
 # global for data
 DATA_INTERVAL = 100
 TRAIN_DATA_PATH = "/data/mnist/train"
@@ -91,29 +89,35 @@ def exec_data():
     else:
         send_notice_slack("{} new data for embedding and {} new data for faiss is detected".format(str(num_data[0] - pre_num_data[0]), str(num_data[1] - pre_num_data[1])), "no need to train")
 
-
 def train():
     app.logger.info("train!!!!!!!!!!!!!!!!!!!!")
 
 @app.route("/start")
 def start():
-    global jobs
-
     if scheduler.running:
         scheduler.resume()
     else:
         # job_id = scheduler.add_job(exec_data, 'cron', hour=0, minute=0, second=0, id="data")
         job_id = scheduler.add_job(exec_data, 'interval', seconds=60, id="data")
-        jobs.append(job_id)
-        
         scheduler.start()
+    
+    list_jobs = scheduler.get_jobs()
 
-    return {"jobs": "{} jobs are starting".format(len(jobs))}
+    return {"jobs": str(list_jobs)}
+
+@app.route("/status")
+def status():
+    list_jobs = scheduler.get_jobs()
+
+    return {"jobs": str(list_jobs)}
 
 @app.route("/stop")
 def stop():
     scheduler.pause()
-    return {"jobs": "{} jobs are paused".format(len(jobs))}
+
+    list_jobs = scheduler.get_jobs()
+
+    return {"jobs": str(list_jobs)}
 
 @app.route("/actions", methods=["POST"])
 def action():
